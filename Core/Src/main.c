@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "stdint.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -40,7 +40,17 @@ volatile CurrentChannel currentChannel = CHANNEL_A; // Начинаем с ка�
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define Repeater1 0x59
+#define Repeater2 0x5B
+#define Repeater3 0x5F
 
+#define Repeater1_RX 0x59
+#define Repeater2_RX 0x5B
+#define Repeater3_RX 0x5F
+
+#define Repeater1_TX 0x5E
+#define Repeater2_TX 0x66
+#define Repeater3_TX 0x60
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -104,9 +114,8 @@ static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
-
-
 
 
 void Update_Disk_Status(uint8_t disk_id, uint8_t status) {
@@ -128,220 +137,354 @@ void ProcessSGPIOData(uint16_t sgpioData, uint8_t startIndex)
 		uint8_t diskIndex = startIndex + i; // ндекс диска (0-3 для A, 4- 7 для B)
 		uint8_t diskStatus = (sgpioData >> (3 * i)) & 0x07; // �?звлечение 3 бит для диска
 
-		if (((diskStatus >> 0) & 0x01) == 1) Update_Disk_Status(diskIndex, 0x01); // 1-й бит - активность
-		if (((diskStatus >> 1) & 0x01) == 1) Update_Disk_Status(diskIndex, 0x02);   // 2-й бит - локация
-		if (((diskStatus >> 2) & 0x01) == 1) Update_Disk_Status(diskIndex, 0x03);    // 3-й бит - ошибка
+		if (((diskStatus >> 0) & 0x01) == 1)
+			{
+			Update_Disk_Status(diskIndex, 0x01) ;// 1-й бит - активность
+			} else
+		if (((diskStatus >> 1) & 0x01) == 1)
+			{
+			Update_Disk_Status(diskIndex, 0x02);   // 2-й бит - локация
+			}else
+		if (((diskStatus >> 2) & 0x01) == 1)
+			{
+			Update_Disk_Status(diskIndex, 0x03);    // 3-й бит - ошибка
+			}else 	Update_Disk_Status(diskIndex, 0x00);    // 3-й бит - ошибка
 
 		// Обновление статуса диска
 
 	}
 }
+
+
+void configred(){
+
+
 void sendI2c(int reg, int value, uint16_t adr_rep)
 {
 	I2CTransmit[0] = reg;
 	I2CTransmit[1] = value;
-	HAL_I2C_Master_Transmit(&hi2c2, (adr_rep << 1), I2CTransmit, 2, 100);
+	HAL_I2C_Master_Transmit(&hi2c2, (adr_rep << 1), I2CTransmit, 2, HAL_MAX_DELAY);
 	HAL_Delay(10);
 }
-
-
-void redriver_init_1 (uint16_t adr_rep) //RX1
+void A4_setting(int dB, int VOD, int dB_cont, int adr)
 {
-	sendI2c(0x06, 0x18, adr_rep); 	//�?нициализация каналов
-	sendI2c(0x0F, 0x00, adr_rep);	// db B_0
-	sendI2c(0x10, 0xAE, adr_rep);  // VOD/VID
-
-	sendI2c(0x11, 0x00, adr_rep);  // Ослабелние
-	sendI2c(0x16, 0x00, adr_rep);  //db B_1
-	sendI2c(0x17, 0xAE, adr_rep);
-
-	sendI2c(0x18, 0x00, adr_rep);
-	sendI2c(0x1D, 0x00, adr_rep);	//db B_2
-	sendI2c(0x1E, 0xAE, adr_rep);
-
-	sendI2c(0x1F, 0x00, adr_rep);
-	sendI2c(0x24, 0x00, adr_rep);	//db B_3
-	sendI2c(0x25, 0xAE, adr_rep);
-	sendI2c(0x26, 0x00, adr_rep);
-	sendI2c(0x2C, 0x00, adr_rep);	//db A_0
-	sendI2c(0x2D, 0xAE, adr_rep);
-	sendI2c(0x2E, 0x00, adr_rep);
-	sendI2c(0x33, 0x00, adr_rep);	//db A_1
-	sendI2c(0x34, 0xAE, adr_rep);
-	sendI2c(0x35, 0x00, adr_rep);
-	sendI2c(0x3A, 0x00, adr_rep);	//db A_2
-	sendI2c(0x3B, 0xAE, adr_rep);
-	sendI2c(0x3C, 0x00, adr_rep);
-	sendI2c(0x41, 0x00, adr_rep);	//db A_3
-	sendI2c(0x42, 0xAE, adr_rep);
-	sendI2c(0x43, 0x00, adr_rep);
+	sendI2c(0x0F, dB, adr);
+	sendI2c(0x10, VOD, adr);
+	sendI2c(0x11, dB_cont, adr);
 }
 
-void redriver_init_2 (uint16_t adr_rep) //RX2
+void B4_setting(int dB, int VOD, int dB_cont, int adr)
 {
-	sendI2c(0x06, 0x18, adr_rep); 	//�?нициализация каналов
-	sendI2c(0x0F, 0x00, adr_rep);	//db B_0
-	sendI2c(0x10, 0xAE, adr_rep);
-	sendI2c(0x11, 0x00, adr_rep);
-	sendI2c(0x16, 0x00, adr_rep);  //db B_1
-	sendI2c(0x17, 0xAE, adr_rep);
-	sendI2c(0x18, 0x00, adr_rep);
-	sendI2c(0x1D, 0x00, adr_rep);	//db B_2
-	sendI2c(0x1E, 0xAE, adr_rep);
-	sendI2c(0x1F, 0x00, adr_rep);
-	sendI2c(0x24, 0x01, adr_rep);	//db B_3
-	sendI2c(0x25, 0xAE, adr_rep);
-	sendI2c(0x26, 0x00, adr_rep);
-	sendI2c(0x2C, 0x01, adr_rep);	//db A_0
-	sendI2c(0x2D, 0xAE, adr_rep);
-	sendI2c(0x2E, 0x00, adr_rep);
-	sendI2c(0x33, 0x00, adr_rep);	//db A_1
-	sendI2c(0x34, 0xAE, adr_rep);
-	sendI2c(0x35, 0x00, adr_rep);
-	sendI2c(0x3A, 0x00, adr_rep);	//db A_2
-	sendI2c(0x3B, 0xAE, adr_rep);
-	sendI2c(0x3C, 0x00, adr_rep);
-	sendI2c(0x41, 0x00, adr_rep);	//db A_3
-	sendI2c(0x42, 0xAE, adr_rep);
-	sendI2c(0x43, 0x00, adr_rep);
+	sendI2c(0x16, dB, adr); //db B_1
+	sendI2c(0x17, VOD, adr); // B4
+	sendI2c(0x18, dB_cont, adr);
+}
+
+void C4_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x1D, dB, adr); //db B_2
+	sendI2c(0x1E, VOD, adr); // C4
+	sendI2c(0x1F, dB_cont, adr);
+}
+
+void D4_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x24, dB, adr); //db B_3
+	sendI2c(0x25, VOD, adr); // D4
+	sendI2c(0x26, dB_cont, adr);
+}
+
+void E4_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x2C, dB, adr); //db A_0
+	sendI2c(0x2D, VOD, adr); // E4
+	sendI2c(0x2E, dB_cont, adr);
+}
+
+void F4_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x33, dB, adr); //db A_0
+	sendI2c(0x34, VOD, adr); // E4
+	sendI2c(0x35, dB_cont, adr);
+}
+
+void A3_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x3A, dB, adr); //db A_0
+	sendI2c(0x3B, VOD, adr); // E4
+	sendI2c(0x3C, dB_cont, adr);
+}
+
+void B3_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x41, dB, adr); //db A_0
+	sendI2c(0x42, VOD, adr); // E4
+	sendI2c(0x43, dB_cont, adr);
+}
+
+void C3_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x0F, dB, adr); //db A_0
+	sendI2c(0x10, VOD, adr); // E4
+	sendI2c(0x11, dB_cont, adr);
+}
+
+void D3_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x16, dB, adr); //db A_0
+	sendI2c(0x17, VOD, adr); // E4
+	sendI2c(0x18, dB_cont, adr);
+}
+
+void E3_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x1D, dB, adr); //db A_0
+	sendI2c(0x1E, VOD, adr); // E4
+	sendI2c(0x1F, dB_cont, adr);
+}
+
+void F3_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x24, dB, adr); //db A_0
+	sendI2c(0x25, VOD, adr); // E4
+	sendI2c(0x26, dB_cont, adr);
+}
+
+void F2_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x2C, dB, adr); //db A_0
+	sendI2c(0x2D, VOD, adr); // E4
+	sendI2c(0x2E, dB_cont, adr);
+}
+
+void E2_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x33, dB, adr); //db A_0
+	sendI2c(0x34, VOD, adr); // E4
+	sendI2c(0x35, dB_cont, adr);
+}
+
+void D2_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x3A, dB, adr); //db A_0
+	sendI2c(0x3B, VOD, adr); // E4
+	sendI2c(0x3C, dB_cont, adr);
+}
+
+void C2_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x41, dB, adr); //db A_0
+	sendI2c(0x42, VOD, adr); // E4
+	sendI2c(0x43, dB_cont, adr);
+}
+
+void B2_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x0F, dB, adr); //db A_0
+	sendI2c(0x10, VOD, adr); // E4
+	sendI2c(0x11, dB_cont, adr);
+}
+
+void A2_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x16, dB, adr); //db A_0
+	sendI2c(0x17, VOD, adr); // E4
+	sendI2c(0x18, dB_cont, adr);
+}
+
+void F1_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x1D, dB, adr); //db A_0
+	sendI2c(0x1E, VOD, adr); // E4
+	sendI2c(0x1F, dB_cont, adr);
+}
+
+void E1_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x24, dB, adr); //db A_0
+	sendI2c(0x25, VOD, adr); // E4
+	sendI2c(0x26, dB_cont, adr);
+}
+
+void D1_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x2C, dB, adr); //db A_0
+	sendI2c(0x2D, VOD, adr); // E4
+	sendI2c(0x2E, dB_cont, adr);
+}
+
+void C1_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x33, dB, adr); //db A_0
+	sendI2c(0x34, VOD, adr); // E4
+	sendI2c(0x35, dB_cont, adr);
+}
+
+void B1_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x3A, dB, adr); //db A_0
+	sendI2c(0x3B, VOD, adr); // E4
+	sendI2c(0x3C, dB_cont, adr);
+}
+
+void A1_setting(int dB, int VOD, int dB_cont, int adr)
+{
+	sendI2c(0x41, dB, adr); //db A_0
+	sendI2c(0x42, VOD, adr); // E4
+	sendI2c(0x43, dB_cont, adr);
+}
+
+void redriver_init_1 (uint16_t adr_rep) //RX0
+{
+	sendI2c(0x06, 0x18, adr_rep); // Channel initialization
+
+
+	A4_setting(0x02, 0xAF, 0x80, adr_rep); //A4     dB, VOD/VID, Attenuation	//F4
+
+	B4_setting(0x02, 0xAF, 0x80, adr_rep); //B4     dB, VOD/VID, Attenuation	//F3
+
+	C4_setting(0x02, 0xAF, 0x80, adr_rep); //C4     dB, VOD/VID, Attenuation	//F2
+
+	D4_setting(0x03, 0xAF, 0xE0, adr_rep); //D4     dB, VOD/VID, Attenuation	//F1
+
+	E4_setting(0x03, 0xAF, 0x80, adr_rep); //E4     dB, VOD/VID, Attenuation	//E4
+
+	F4_setting(0x03, 0xAF, 0x80, adr_rep); //F4     dB, VOD/VID, Attenuation	//E3
+
+	A3_setting(0x03, 0xAE, 0x80, adr_rep); //A3     dB, VOD/VID, Attenuation	//E2
+
+	B3_setting(0x02, 0xAF, 0x80, adr_rep); //B3     dB, VOD/VID, Attenuation	//E1
+}
+
+void redriver_init_2 (uint16_t adr_rep) //RX1
+{
+	sendI2c(0x06, 0x18, adr_rep); // Channel initialization
+
+	C3_setting(0x02,  0xAF, 0x80, adr_rep); //C3     dB, VOD/VID, Attenuation	//D1
+
+	D3_setting(0x03, 0xAF, 0xE0, adr_rep); //D3     dB, VOD/VID, Attenuation	//D2
+
+	E3_setting(0x03, 0xAF, 0x80, adr_rep); //E3     dB, VOD/VID, Attenuation	//D3
+
+	F3_setting(0x03, 0xAF, 0xE0, adr_rep); //F3     dB, VOD/VID, Attenuation	//D4
+
+	F2_setting(0x03, 0xAF, 0xE0, adr_rep); //F2     dB, VOD/VID, Attenuation	//C4
+
+	E2_setting(0x03, 0xAF, 0x80, adr_rep); //E2     dB, VOD/VID, Attenuation	//C3
+
+	D2_setting(0x02, 0xAF, 0x80, adr_rep); //D2     dB, VOD/VID, Attenuation	//C2
+
+	C2_setting(0x01, 0xAF, 0x80, adr_rep); //C2     dB, VOD/VID, Attenuation	//C1
 }
 
 void redriver_init_3 (uint16_t adr_rep) //RX3
 {
-	sendI2c(0x06, 0x18, adr_rep); 	//�?нициализация каналов
-	sendI2c(0x0F, 0x00, adr_rep);	//db B_0
-	sendI2c(0x10, 0xAE, adr_rep);
-	sendI2c(0x11, 0x00, adr_rep);
-	sendI2c(0x16, 0x00, adr_rep);  //db B_1
-	sendI2c(0x17, 0xAE, adr_rep);
-	sendI2c(0x18, 0x00, adr_rep);
-	sendI2c(0x1D, 0x01, adr_rep);	//db B_2
-	sendI2c(0x1E, 0xAE, adr_rep);
-	sendI2c(0x1F, 0x00, adr_rep);
-	sendI2c(0x24, 0x00, adr_rep);	//db B_3
-	sendI2c(0x25, 0xAE, adr_rep);
-	sendI2c(0x26, 0x00, adr_rep);
-	sendI2c(0x2C, 0x00, adr_rep);	//db A_0
-	sendI2c(0x2D, 0xAE, adr_rep);
-	sendI2c(0x2E, 0x00, adr_rep);
-	sendI2c(0x33, 0x00, adr_rep);	//db A_1
-	sendI2c(0x34, 0xAE, adr_rep);
-	sendI2c(0x35, 0x00, adr_rep);
-	sendI2c(0x3A, 0x00, adr_rep);	//db A_2
-	sendI2c(0x3B, 0xAE, adr_rep);
-	sendI2c(0x3C, 0x00, adr_rep);
-	sendI2c(0x41, 0x00, adr_rep);	//db A_3
-	sendI2c(0x42, 0xAE, adr_rep);
-	sendI2c(0x43, 0x00, adr_rep);
+	sendI2c(0x06, 0x18, adr_rep); // Channel initialization
+
+	B2_setting(0x02, 0xAF, 0x80, adr_rep); //B2     dB, VOD/VID, Attenuation	//B4
+
+	A2_setting(0x00, 0xAF, 0xE0, adr_rep); //A2     dB, VOD/VID, Attenuation	//B3
+
+	F1_setting(0x03, 0xAF, 0xE0, adr_rep); //F1     dB, VOD/VID, Attenuation	//B2
+
+	E1_setting(0x03, 0xAF, 0xA0, adr_rep); //E1     dB, VOD/VID, Attenuation	//B1
+
+	D1_setting(0x02, 0xAF, 0xE0, adr_rep); //D1     dB, VOD/VID, Attenuation	//A4
+
+	C1_setting(0x01, 0xAF, 0x80, adr_rep); //C1     dB, VOD/VID, Attenuation	//A3
+
+	B1_setting(0x01, 0xAF, 0xE0, adr_rep); //B1     dB, VOD/VID, Attenuation	//A2
+
+	A1_setting(0x00, 0xAE, 0xE0, adr_rep); //A1     dB, VOD/VID, Attenuation	//A1
 }
 
-void redriver_init_other1 (uint16_t adr_rep) //TX1
+void redriver_init_other1 (uint16_t adr_rep) //TX0
 {
-	sendI2c(0x06, 0x18, adr_rep); 	//�?нициализация каналов
-	sendI2c(0x0F, 0x00, adr_rep);	// db B_0
-	sendI2c(0x10, 0xAE, adr_rep);  // VOD/VID
-	sendI2c(0x11, 0x00, adr_rep);  // Ослабелние
-	sendI2c(0x16, 0x00, adr_rep);  //db B_1
-	sendI2c(0x17, 0xAE, adr_rep);
-	sendI2c(0x18, 0x00, adr_rep);
-	sendI2c(0x1D, 0x00, adr_rep);	//db B_2
-	sendI2c(0x1E, 0xAE, adr_rep);
-	sendI2c(0x1F, 0x00, adr_rep);
-	sendI2c(0x24, 0x00, adr_rep);	//db B_3
-	sendI2c(0x25, 0xAE, adr_rep);
-	sendI2c(0x26, 0x00, adr_rep);
-	sendI2c(0x2C, 0x00, adr_rep);	//db A_0
-	sendI2c(0x2D, 0xAE, adr_rep);
-	sendI2c(0x2E, 0x00, adr_rep);
-	sendI2c(0x33, 0x00, adr_rep);	//db A_1
-	sendI2c(0x34, 0xAE, adr_rep);
-	sendI2c(0x35, 0x00, adr_rep);
-	sendI2c(0x3A, 0x00, adr_rep);	//db A_2
-	sendI2c(0x3B, 0xAE, adr_rep);
-	sendI2c(0x3C, 0x03, adr_rep);
-	sendI2c(0x41, 0x00, adr_rep);	//db A_3
-	sendI2c(0x42, 0xAE, adr_rep);
-	sendI2c(0x43, 0x00, adr_rep);
+	sendI2c(0x06, 0x18, adr_rep); // Channel initialization
+
+	A4_setting(0x01, 0xAF, 0x80, adr_rep); //A4     dB, VOD/VID, Attenuation	//F4
+
+	B4_setting(0x02, 0xAF, 0x80, adr_rep); //B4     dB, VOD/VID, Attenuation	//F3
+
+	C4_setting(0x02, 0xAF, 0x80, adr_rep); //C4     dB, VOD/VID, Attenuation	//F2
+
+	D4_setting(0x02, 0xAF, 0xE0, adr_rep); //D4     dB, VOD/VID, Attenuation	//F1
+
+	E4_setting(0x03, 0xAF, 0x84, adr_rep); //E4     dB, VOD/VID, Attenuation	//E4
+
+	F4_setting(0x02, 0xAF, 0x84, adr_rep); //F4     dB, VOD/VID, Attenuation	//E3
+
+	A3_setting(0x00, 0xAE, 0x80, adr_rep); //A3     dB, VOD/VID, Attenuation	//E2
+
+	B3_setting(0x02, 0xAB, 0x82, adr_rep); //B3     dB, VOD/VID, Attenuation	//E1
 }
 
-void redriver_init_other2 (uint16_t adr_rep) //TX2
+void redriver_init_other2 (uint16_t adr_rep) //TX1
 {
-	sendI2c(0x06, 0x18, adr_rep); 	//�?нициализация каналов
-	sendI2c(0x0F, 0x00, adr_rep);	// db B_0
-	sendI2c(0x10, 0xAE, adr_rep);
-	sendI2c(0x11, 0x00, adr_rep);
-	sendI2c(0x16, 0x00, adr_rep);  //db B_1
-	sendI2c(0x17, 0xAE, adr_rep);
-	sendI2c(0x18, 0x00, adr_rep);
-	sendI2c(0x1D, 0x00, adr_rep);	//db B_2
-	sendI2c(0x1E, 0xAE, adr_rep);
-	sendI2c(0x1F, 0x00, adr_rep);
-	sendI2c(0x24, 0x03, adr_rep);	//db B_3
-	sendI2c(0x25, 0xA8, adr_rep);
-	sendI2c(0x26, 0x00, adr_rep);
-	sendI2c(0x2C, 0x03, adr_rep);	//db A_0
-	sendI2c(0x2D, 0xA8, adr_rep);
-	sendI2c(0x2E, 0x00, adr_rep);
-	sendI2c(0x33, 0x00, adr_rep);	//db A_1
-	sendI2c(0x34, 0xAE, adr_rep);
-	sendI2c(0x35, 0x00, adr_rep);
-	sendI2c(0x3A, 0x00, adr_rep);	//db A_2
-	sendI2c(0x3B, 0xAE, adr_rep);
-	sendI2c(0x3C, 0x00, adr_rep);
-	sendI2c(0x41, 0x00, adr_rep);	//db A_3
-	sendI2c(0x42, 0xAE, adr_rep);
-	sendI2c(0x43, 0x00, adr_rep);
+	sendI2c(0x06, 0x18, adr_rep); // Channel initialization
+
+	C3_setting(0x02, 0xAD, 0x83, adr_rep); //C3     dB, VOD/VID, Attenuation	//D1
+
+	D3_setting(0x02, 0xAD, 0x83, adr_rep); //D3     dB, VOD/VID, Attenuation	//D2
+
+	E3_setting(0x02, 0xAE, 0x82, adr_rep); //E3     dB, VOD/VID, Attenuation	//D3
+
+	F3_setting(0x03, 0xAA, 0xE3,  adr_rep); //F3     dB, VOD/VID, Attenuation	//D4
+
+	F2_setting(0x02, 0xAF, 0xE4, adr_rep); //F2     dB, VOD/VID, Attenuation	//C4
+
+	E2_setting(0x02, 0xAE, 0x82, adr_rep); //E2     dB, VOD/VID, Attenuation	//C3
+
+	D2_setting(0x01, 0xA9, 0x82, adr_rep); //D2     dB, VOD/VID, Attenuation	//C2
+
+	C2_setting(0x02, 0xAE, 0x83, adr_rep); //C2     dB, VOD/VID, Attenuation	//C1
 }
 
-void redriver_init_other3 (uint16_t adr_rep) //TX3
+void redriver_init_other3 (uint16_t adr_rep) //TX2
 {
-	sendI2c(0x06, 0x18, adr_rep); 	//�?нициализация каналов
-	sendI2c(0x0F, 0x00, adr_rep);	//db B_0
-	sendI2c(0x10, 0xA8, adr_rep);
-	sendI2c(0x11, 0x05, adr_rep);
-	sendI2c(0x16, 0x00, adr_rep);  //db B_1
-	sendI2c(0x17, 0xAE, adr_rep);
-	sendI2c(0x18, 0x00, adr_rep);
-	sendI2c(0x1D, 0x03, adr_rep);	//db B_2
-	sendI2c(0x1E, 0xA8, adr_rep);
-	sendI2c(0x1F, 0x00, adr_rep);
-	sendI2c(0x24, 0x00, adr_rep);	//db B_3
-	sendI2c(0x25, 0xAE, adr_rep);
-	sendI2c(0x26, 0x05, adr_rep);
-	sendI2c(0x2C, 0x00, adr_rep);	//db A_0
-	sendI2c(0x2D, 0xAE, adr_rep);
-	sendI2c(0x2E, 0x03, adr_rep);
-	sendI2c(0x33, 0x00, adr_rep);	//db A_1
-	sendI2c(0x34, 0xAE, adr_rep);
-	sendI2c(0x35, 0x00, adr_rep);
-	sendI2c(0x3A, 0x00, adr_rep);	//db A_2
-	sendI2c(0x3B, 0xAE, adr_rep);
-	sendI2c(0x3C, 0x03, adr_rep);
-	sendI2c(0x41, 0x00, adr_rep);	//db A_3
-	sendI2c(0x42, 0xAE, adr_rep);
-	sendI2c(0x43, 0x03, adr_rep);
+	sendI2c(0x06, 0x18, adr_rep); // Channel initialization
+
+	B2_setting(0x01, 0xAD, 0x83, adr_rep); //B2     dB, VOD/VID, Attenuation	//B4
+
+	A2_setting(0x01, 0xA8, 0x80, adr_rep); //A2     dB, VOD/VID, Attenuation	//B3
+
+	F1_setting(0x02, 0xAF, 0xE4, adr_rep); //F1     dB, VOD/VID, Attenuation	//B2
+
+	E1_setting(0x02, 0xAF, 0x84, adr_rep); //E1     dB, VOD/VID, Attenuation	//B1
+
+	D1_setting(0x01, 0xAF, 0x80, adr_rep); //D1     dB, VOD/VID, Attenuation	//A4
+
+	C1_setting(0x00, 0xAF, 0x80, adr_rep); //C1     dB, VOD/VID, Attenuation	//A3
+
+	B1_setting(0x00, 0xAF, 0x82, adr_rep); //B1     dB, VOD/VID, Attenuation	//A2
+
+	A1_setting(0x00, 0xAE, 0x80, adr_rep); //A1     dB, VOD/VID, Attenuation	//A1
 }
 void Redriver_Init(void)
 {
-	HAL_I2C_Master_Transmit(&hi2c2, (adr_choice << 1), I2CInit_1, 1, 1);  //Выбор канала 0 на расширителе
-	//RX
-	HAL_Delay(10);
-	redriver_init_1 (0x59); //Зашиваем 1 редрайвер на прием
-	HAL_Delay(10);
-	redriver_init_2 (0x5B); //2
-	HAL_Delay(10);
-	redriver_init_3 (0x5F); //3
-	HAL_Delay(10);
-	HAL_I2C_Master_Transmit(&hi2c2, (adr_choice << 1), I2CInit_2, 1, 1);  //Выбор канала 1 на расширителе
-	//TX
-	HAL_Delay(10);
-	redriver_init_other1 (0x59); //Зашиваем 1 редрайвер на передачу
-	HAL_Delay(10);
-	redriver_init_other2 (0x5B); //2
-	HAL_Delay(10);
-	redriver_init_other3 (0x5F); //3
+
+
+	redriver_init_1 (Repeater1_RX); //Зашиваем 1 редрайвер на прием
+    HAL_Delay(5);
+
+    redriver_init_2 (Repeater2_RX);
+    HAL_Delay(5);
+
+    redriver_init_3 (Repeater3_RX);
+
+    HAL_Delay(10);
+
+    redriver_init_other1 (Repeater1_TX); //Зашиваем 1 редрайвер на передачу
+    HAL_Delay(5);
+
+    redriver_init_other2 (Repeater2_TX); //2
+    HAL_Delay(5);
+
+    redriver_init_other3 (Repeater3_TX); //3
 }
 
+Redriver_Init();
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -381,11 +524,19 @@ int main(void)
   MX_DMA_Init();
   MX_I2C1_Init();
   MX_I2C2_Init();
+  configred();
+
   MX_TIM2_Init();
   MX_TIM3_Init();
+
+  /* Initialize interrupts */
+  MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
-	HAL_Delay(100);
-	Redriver_Init();
+
+
+
+	configred();
+
 	HAL_Delay(100);
 	// Включаем прерывания для I2C
 	HAL_NVIC_EnableIRQ(I2C1_IRQn);
@@ -455,6 +606,23 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief NVIC Configuration.
+  * @retval None
+  */
+static void MX_NVIC_Init(void)
+{
+  /* EXTI0_1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
+  /* EXTI2_3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(EXTI2_3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_3_IRQn);
+  /* EXTI4_15_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+}
+
+/**
   * @brief I2C1 Initialization Function
   * @param None
   * @retval None
@@ -518,14 +686,14 @@ static void MX_I2C2_Init(void)
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
-  hi2c2.Init.Timing = 0x00C12469;
+  hi2c2.Init.Timing = 0x00C12166;
   hi2c2.Init.OwnAddress1 = 0;
   hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
   hi2c2.Init.OwnAddress2 = 0;
   hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
   hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_ENABLE;
   if (HAL_I2C_Init(&hi2c2) != HAL_OK)
   {
     Error_Handler();
@@ -533,7 +701,7 @@ static void MX_I2C2_Init(void)
 
   /** Configure Analogue filter
   */
-  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_DISABLE) != HAL_OK)
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
   {
     Error_Handler();
   }
@@ -677,8 +845,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
-  /*Configure GPIO pins : C_SGPIO_SClock_Pin E_SGPIO_SLoad_Pin C_SGPIO_SLoad_Pin */
-  GPIO_InitStruct.Pin = C_SGPIO_SClock_Pin|E_SGPIO_SLoad_Pin|C_SGPIO_SLoad_Pin;
+  /*Configure GPIO pins : C_SGPIO_SClock_Pin C_SGPIO_SLoad_Pin */
+  GPIO_InitStruct.Pin = C_SGPIO_SClock_Pin|C_SGPIO_SLoad_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -697,8 +865,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : E_SGPIO_SClock_Pin F_SGPIO_SClock_Pin F_SGPIO_SLoad_Pin */
-  GPIO_InitStruct.Pin = E_SGPIO_SClock_Pin|F_SGPIO_SClock_Pin|F_SGPIO_SLoad_Pin;
+  /*Configure GPIO pins : E_SGPIO_SLoad_Pin F_SGPIO_SClock_Pin F_SGPIO_SLoad_Pin */
+  GPIO_InitStruct.Pin = E_SGPIO_SLoad_Pin|F_SGPIO_SClock_Pin|F_SGPIO_SLoad_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -715,21 +883,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(F_SGPIO_SData_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : D_SGPIO_SLoad_Pin */
-  GPIO_InitStruct.Pin = D_SGPIO_SLoad_Pin;
+  /*Configure GPIO pins : E_SGPIO_SClock_Pin D_SGPIO_SLoad_Pin */
+  GPIO_InitStruct.Pin = E_SGPIO_SClock_Pin|D_SGPIO_SLoad_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(D_SGPIO_SLoad_GPIO_Port, &GPIO_InitStruct);
-
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI2_3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI2_3_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
@@ -799,7 +957,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 		// Если принято 12 бит, завершить прием
 		if (bitCounter_A >= 12) {
 			isReceiving_A = 0;
-			ProcessSGPIOData(sgpioBuffer_A, 0); // Обработка данных для дисков 0-3
+			ProcessSGPIOData(sgpioBuffer_A, 20); // Обработка данных для дисков 0-3
 
 			if(sgpioBuffer_A !=0)
 			{
@@ -828,7 +986,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 		// Если принято 12 бит, завершить прием
 		if (bitCounter_B >= 12) {
 			isReceiving_B = 0;
-			ProcessSGPIOData(sgpioBuffer_B, 4); // Обработка данных для дисков 4-7
+			ProcessSGPIOData(sgpioBuffer_B, 16); // Обработка данных для дисков 4-7
 			if(sgpioBuffer_B != 0)
 			{
 				sgpio_detected = 1;
@@ -854,7 +1012,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 		// Если принято 12 бит, завершить прием
 		if (bitCounter_C >= 12) {
 			isReceiving_C = 0;
-			ProcessSGPIOData(sgpioBuffer_C, 0); // Обработка данных для дисков 0-3
+			ProcessSGPIOData(sgpioBuffer_C, 12); // Обработка данных для дисков 8-11
 
 			if(sgpioBuffer_C !=0)
 			{
@@ -883,7 +1041,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 		// Если принято 12 бит, завершить прием
 		if (bitCounter_D >= 12) {
 			isReceiving_D = 0;
-			ProcessSGPIOData(sgpioBuffer_D, 4); // Обработка данных для дисков 4-7
+			ProcessSGPIOData(sgpioBuffer_D, 8); // Обработка данных для дисков 12-15
 			if(sgpioBuffer_D != 0)
 			{
 				sgpio_detected = 1;
@@ -897,7 +1055,8 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 				currentChannel = CHANNEL_E;
 			}
 		}
-	}else if (GPIO_Pin == E_SGPIO_SClock_Pin && isReceiving_E && currentChannel == CHANNEL_E)
+	}
+else if (GPIO_Pin == E_SGPIO_SClock_Pin && isReceiving_E && currentChannel == CHANNEL_E)
 	{
 		// Прием данных для канала A
 		uint8_t dataBit = HAL_GPIO_ReadPin(E_SGPIO_SData_GPIO_Port, E_SGPIO_SData_Pin);
@@ -909,7 +1068,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 		// Если принято 12 бит, завершить прием
 		if (bitCounter_E >= 12) {
 			isReceiving_E = 0;
-			ProcessSGPIOData(sgpioBuffer_E, 0); // Обработка данных для дисков 0-3
+			ProcessSGPIOData(sgpioBuffer_E, 4); // Обработка данных для дисков 16-19
 
 			if(sgpioBuffer_E !=0)
 			{
@@ -938,7 +1097,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 		// Если принято 12 бит, завершить прием
 		if (bitCounter_F >= 12) {
 			isReceiving_F = 0;
-			ProcessSGPIOData(sgpioBuffer_F, 4); // Обработка данных для дисков 4-7
+			ProcessSGPIOData(sgpioBuffer_F, 0); // Обработка данных для дисков 20-23
 			if(sgpioBuffer_F != 0)
 			{
 				sgpio_detected = 1;

@@ -76,11 +76,8 @@ void Error_Handler(void);
 #define B_SGPIO_SLoad_EXTI_IRQn EXTI4_15_IRQn
 #define B_SGPIO_SData_Pin GPIO_PIN_13
 #define B_SGPIO_SData_GPIO_Port GPIOB
-#define E_SGPIO_SClock_Pin GPIO_PIN_9
-#define E_SGPIO_SClock_GPIO_Port GPIOA
-#define E_SGPIO_SClock_EXTI_IRQn EXTI4_15_IRQn
-#define E_SGPIO_SLoad_Pin GPIO_PIN_6
-#define E_SGPIO_SLoad_GPIO_Port GPIOC
+#define E_SGPIO_SLoad_Pin GPIO_PIN_9
+#define E_SGPIO_SLoad_GPIO_Port GPIOA
 #define E_SGPIO_SLoad_EXTI_IRQn EXTI4_15_IRQn
 #define C_SGPIO_SLoad_Pin GPIO_PIN_7
 #define C_SGPIO_SLoad_GPIO_Port GPIOC
@@ -101,6 +98,9 @@ void Error_Handler(void);
 #define F_SGPIO_SData_GPIO_Port GPIOC
 #define E_SGPIO_SData_Pin GPIO_PIN_2
 #define E_SGPIO_SData_GPIO_Port GPIOD
+#define E_SGPIO_SClock_Pin GPIO_PIN_4
+#define E_SGPIO_SClock_GPIO_Port GPIOD
+#define E_SGPIO_SClock_EXTI_IRQn EXTI4_15_IRQn
 #define D_SGPIO_SLoad_Pin GPIO_PIN_5
 #define D_SGPIO_SLoad_GPIO_Port GPIOD
 #define D_SGPIO_SLoad_EXTI_IRQn EXTI4_15_IRQn

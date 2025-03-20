@@ -182,10 +182,10 @@ void EXTI4_15_IRQHandler(void)
   /* USER CODE BEGIN EXTI4_15_IRQn 0 */
 
   /* USER CODE END EXTI4_15_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(D_SGPIO_SLoad_Pin);
-  HAL_GPIO_EXTI_IRQHandler(E_SGPIO_SLoad_Pin);
-  HAL_GPIO_EXTI_IRQHandler(C_SGPIO_SLoad_Pin);
   HAL_GPIO_EXTI_IRQHandler(E_SGPIO_SClock_Pin);
+  HAL_GPIO_EXTI_IRQHandler(D_SGPIO_SLoad_Pin);
+  HAL_GPIO_EXTI_IRQHandler(C_SGPIO_SLoad_Pin);
+  HAL_GPIO_EXTI_IRQHandler(E_SGPIO_SLoad_Pin);
   HAL_GPIO_EXTI_IRQHandler(F_SGPIO_SClock_Pin);
   HAL_GPIO_EXTI_IRQHandler(B_SGPIO_SClock_Pin);
   HAL_GPIO_EXTI_IRQHandler(B_SGPIO_SLoad_Pin);
